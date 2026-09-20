@@ -1,5 +1,7 @@
 import re
-import getpass
+import msvcrt
+import time
+
 
 COMMON_PASSWORDS = {
     "password",
@@ -11,6 +13,49 @@ COMMON_PASSWORDS = {
     "welcome",
     "password123"
 }
+
+
+def password_input(prompt="Enter password to test: "):
+    print(prompt, end="", flush=True)
+
+    password = ""
+    visible = False
+    typed_time = 0
+
+    while True:
+        # Hide the last typed character after 1 second
+        if visible and time.time() - typed_time >= 1:
+            print("\b*\b", end="", flush=True)
+            visible = False
+
+        if msvcrt.kbhit():
+            char = msvcrt.getwch()
+
+            # Enter
+            if char == "\r":
+                print()
+                return password
+
+            # Backspace
+            elif char == "\b":
+                if password:
+                    password = password[:-1]
+                    print("\b \b", end="", flush=True)
+                    visible = False
+
+            # Normal character
+            elif char not in ("\x00", "\xe0"):
+                if visible:
+                    print("\b*\b", end="", flush=True)
+
+                password += char
+
+                # Show newest character temporarily
+                print(char, end="", flush=True)
+                visible = True
+                typed_time = time.time()
+
+        time.sleep(0.01)
 
 
 def has_common_pattern(password):
@@ -29,13 +74,13 @@ def check_password(password):
     score = 0
     suggestions = []
 
-    # Common password check
+    # Common password
     if password.lower() in COMMON_PASSWORDS:
         return 0, [
             "This is a commonly used password. Choose a different one."
         ]
 
-    # Predictable pattern check
+    # Predictable patterns
     if has_common_pattern(password):
         suggestions.append(
             "Avoid predictable patterns such as name@123 or name+birth-year."
@@ -84,11 +129,11 @@ print("=" * 45)
 print("       PASSWORD STRENGTH CHECKER")
 print("=" * 45)
 
-password = getpass.getpass("Enter password to test: ")
+password = password_input()
 
 score, suggestions = check_password(password)
 
-# Strength calculation
+# Strength
 if score <= 2:
     strength = "Weak"
 elif score <= 4:
@@ -100,7 +145,6 @@ print("\nPassword Strength:", strength)
 
 if suggestions:
     print("\nSuggestions:")
-
     for suggestion in suggestions:
         print("- " + suggestion)
 else:
